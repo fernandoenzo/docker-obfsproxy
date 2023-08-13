@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e  # Exit immediately if a command exits with a non-zero status.
+set -x  # All executed commands are printed to the terminal
+
+aptitude update ; aptitude install -y obfs4proxy
+
+mkdir -p /var/tor
+cp /tmp/contents/static/envvars /var/tor
+cp /tmp/contents/static/obfsproxy /usr/local/bin
+
+rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /root/.aptitude /root/.wget-hsts
+
