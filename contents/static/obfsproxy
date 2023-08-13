@@ -1,25 +1,22 @@
 #!/bin/bash
 
-IAT_ORIG=$IAT_MODE
-LISTEN_ORIG=$LISTEN_ADDRESS
-REDIRECT_ORIG=$REDIRECT_TO
-
-source /var/tor/envvars
-
 export TOR_PT_SERVER_TRANSPORTS=obfs4
 export TOR_PT_CLIENT_TRANSPORTS=obfs4
-export TOR_PT_SERVER_TRANSPORT_OPTIONS=obfs4:iat-mode=${IAT_ORIG:-$IAT_MODE}
-export TOR_PT_SERVER_BINDADDR=obfs4-${LISTEN_ORIG:-$LISTEN_ADDRESS}
-export TOR_PT_ORPORT=${REDIRECT_ORIG:-$REDIRECT_TO}
+
+source /var/tor/envvars
 
 show_help() {
     echo "Usage: $0 [options]"
     echo "Options:"
-    echo "  -s, --server     Obfs4proxy will run in server mode. Server settings can be configured by modifying the variables in the /var/tor/envvars file"
-    echo "  -c, --client     Obfs4proxy will run in client mode"
-    echo "  -h, --help       Shows this help"
-    echo "  -v, --version    Shows the obfs4proxy program version"
+    echo "  -s, --server     Run obfs4proxy in server mode. Server settings can be configured by modifying the variables in the /var/tor/envvars file"
+    echo "      -i, --iat      iat mode (only for server mode)"
+    echo "      -l, --listen   Address and port to listen on (only for server mode)"
+    echo "      -r, --redirect Address and port to redirect to (only for server mode)"
+    echo "  -c, --client     Run obfs4proxy in client mode"
+    echo "  -h, --help       Show this help"
+    echo "  -v, --version    Show the obfs4proxy program version"
 }
+
 
 if [[ -z $1 ]]; then
     show_help
@@ -29,6 +26,31 @@ fi
 case $1 in
     -s|--server)
         unset TOR_PT_CLIENT_TRANSPORTS
+        shift
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                -i|--iat)
+                    IAT="$2"
+                    shift 2
+                    ;;
+                -l|--listen)
+                    LISTEN="$2"
+                    shift 2
+                    ;;
+                -r|--redirect)
+                    REDIRECT="$2"
+                    shift 2
+                    ;;
+                *)
+                    echo "Invalid option: $1"
+                    show_help
+                    exit 1
+                    ;;
+            esac
+        done
+        export TOR_PT_SERVER_TRANSPORT_OPTIONS=obfs4:iat-mode=${IAT:-$IAT_MODE}
+        export TOR_PT_SERVER_BINDADDR=obfs4-${LISTEN:-$LISTEN_ADDRESS}
+        export TOR_PT_ORPORT=${REDIRECT:-$REDIRECT_TO}
         obfs4proxy -enableLogging -logLevel DEBUG
         exit 0
         ;;
@@ -41,9 +63,14 @@ case $1 in
         obfs4proxy --version
         exit 0
         ;;
-    -h|--help|*)
+    -h|--help)
         show_help
         exit 0
+        ;;
+    *)
+        echo "Invalid option: $1"
+        show_help
+        exit 1
         ;;
 esac
 
